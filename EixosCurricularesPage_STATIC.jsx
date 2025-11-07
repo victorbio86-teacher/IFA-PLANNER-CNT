@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { BookOpen, Book, Users, Zap, Briefcase, ChevronDown, ChevronUp, PlayCircle, Mic, MessageSquare, Download } from 'lucide-react';
 
 // =========================================================================
-// Dados dos Eixos Estruturantes (AGORA COM CAMINHOS ESTÁTICOS MP3)
+// Dados dos Eixos Estruturantes (AGORA COM CAMINHOS ESTÁTICOS WAV)
 // =========================================================================
 
 interface EixoContent {
@@ -18,25 +18,25 @@ const EIXOS_DATA: EixoContent[] = [
         name: 'Método, Conhecimento e Ciência (Investigação Científica)',
         icon: Book,
         fullDescription: "O eixo **Investigação Científica** é a espinha dorsal de todo o trabalho em Ciências da Natureza. Seu objetivo fundamental é capacitar o estudante a ir além da memorização de fatos e dados, ensinando o rigoroso 'como' chegamos ao conhecimento científico validado. O foco principal é o **Letramento Científico** completo, que envolve a capacidade de ler, compreender e, crucialmente, participar do processo de investigação. Isso significa que o aluno deve dominar a arte de formular perguntas investigáveis, elaborar hipóteses testáveis e planejar experimentos controlados. Em Biologia, um excelente exemplo seria guiar a turma a formular e testar hipóteses sobre a variação da taxa de fotossíntese em diferentes condições de luz e cor. Em Física, o aluno pode ser desafiado a projetar um método para medir a aceleração da gravidade usando apenas materiais simples, registrando e analisando os dados com precisão. Este eixo exige o desenvolvimento de habilidades de argumentação baseada em evidências, a identificação de variáveis dependentes e independentes, e a compreensão crítica de vieses em estudos científicos, replicando o método que estrutura o próprio conhecimento da área.",
-        audioFile: '/audios/metodo_conhecimento_ciencia.mp3', 
+        audioFile: '/audios/metodo_conhecimento_ciencia.wav', 
     },
     {
         name: 'Mediação e Intervenção Sociocultural',
         icon: Users,
         fullDescription: "O conhecimento em Ciências da Natureza não pode ser estéril; ele deve ser uma poderosa ferramenta de engajamento e transformação social. O eixo **Mediação e Intervenção Sociocultural** exige que o aluno faça a ponte essencial entre o rigor científico e as necessidades urgentes da comunidade. A Mediação é a habilidade de traduzir informações científicas complexas, como dados sobre poluição hídrica ou relatórios epidemiológicos, para uma linguagem clara e acessível a diversos públicos. Por exemplo, criar materiais informativos sobre a resistência bacteriana para apresentar em uma feira de saúde local. A Intervenção, por sua vez, é a ação ética e responsável: se a comunidade sofre com a falta de saneamento, os alunos podem aplicar conhecimentos de Química e Biologia para prototipar um sistema de filtragem de efluentes de baixo custo usando materiais reciclados. Este eixo promove o desenvolvimento da Bioética, o diálogo e a visão de que o cientista é um agente ativo. O estudante aprende a analisar problemas socioambientais locais (como o descarte inadequado de lixo ou a gestão de recursos hídricos) e a promover uma transformação social justa e sustentável através da ciência.",
-        audioFile: '/audios/mediacao_intervencao_sociocultural.mp3', 
+        audioFile: '/audios/mediacao_intervencao_sociocultural.wav', 
     },
     {
         name: 'Inovação e Intervenção Tecnológica',
         icon: Zap,
         fullDescription: "Este eixo estrutura o aprendizado para unir o conhecimento científico puro ao desenvolvimento prático de soluções e protótipos criativos, focando na geração de valor. **Inovação e Intervenção Tecnológica** significa ir além da compreensão da teoria para aplicá-la na criação de algo novo ou na melhoria de algo existente. A Inovação começa na ideação, como, por exemplo, o desenvolvimento de um novo tipo de embalagem biodegradável após estudar a polimerização (Química) ou a concepção de um sistema de energia eólica mais eficiente (Física). A Intervenção é a aplicação estratégica e técnica. Por exemplo, os alunos podem utilizar microcontroladores (como Arduinos), conhecimentos de Eletrônica e Meteorologia para criar um sensor automatizado que otimiza o uso sustentável da água na agricultura, acionando a irrigação apenas quando necessário. Este eixo estimula intensamente o desenvolvimento do pensamento computacional, a cultura *maker* e o *design thinking*. O objetivo é que o estudante prototipe, simule cenários e teste iterações, transformando a teoria científica em um produto ou processo de impacto positivo, preparando-o para o ecossistema de alta tecnologia e empreendedorismo.",
-        audioFile: '/audios/inovacao_intervencao_tecnologica.mp3', 
+        audioFile: '/audios/inovacao_intervencao_tecnologica.wav', 
     },
     {
         name: 'Mundo do Trabalho e Transformação Social',
         icon: Briefcase,
         fullDescription: "Este eixo crucial conecta o aprendizado de Ciências da Natureza diretamente ao Projeto de Vida do estudante e à sua atuação no mercado de trabalho e na sociedade. Ele garante que o conhecimento acadêmico gere valor profissional, ético e social. O foco aqui não é apenas na técnica, mas na análise estratégica. Por exemplo, ao estudar matrizes energéticas (Física e Química), o aluno deve analisar a viabilidade econômica, os riscos e o impacto ambiental da transição para fontes renováveis, simulando um estudo de caso de consultoria empresarial. O eixo exige o desenvolvimento de competências socioemocionais cruciais: gestão de projetos (do início ao fim), comunicação assertiva em equipe multidisciplinar, e, principalmente, responsabilidade ética e socioambiental nas decisões. O objetivo é preparar o estudante para entender e navegar pelas complexidades do mundo profissional, garantindo que ele não apenas possua o conhecimento científico, mas saiba usá-lo como um agente proativo, capaz de tomar decisões informadas que contribuam para a construção de uma sociedade mais sustentável e justa.",
-        audioFile: '/audios/mundo_trabalho_transformacao_social.mp3', 
+        audioFile: '/audios/mundo_trabalho_transformacao_social.wav', 
     },
 ];
 
@@ -115,7 +115,7 @@ const EixoDetalhe: React.FC<EixoDetalheProps> = ({ name, fullDescription, audioF
             {/* Seção de Controles de Áudio Estático (Fundo Esmeralda) */}
             <div className="p-5 bg-emerald-50 border-l-4 border-emerald-500 rounded-xl shadow-md transition-all duration-300">
                 <h4 className="font-bold text-lg text-emerald-800 flex items-center mb-4">
-                    <Mic className="w-5 h-5 mr-2 text-emerald-600" /> Áudio Pré-Gravado (MP3)
+                    <Mic className="w-5 h-5 mr-2 text-emerald-600" /> Áudio Pré-Gravado (WAV)
                 </h4>
                 
                 <div className="flex flex-col sm:flex-row justify-center gap-4 mb-4">
@@ -134,7 +134,7 @@ const EixoDetalhe: React.FC<EixoDetalheProps> = ({ name, fullDescription, audioF
                         onClick={handleDownload}
                         className="flex items-center justify-center flex-1 min-w-40 px-6 py-3 bg-blue-600 text-white font-extrabold rounded-full hover:bg-blue-700 transition duration-300 shadow-lg shadow-blue-300/50 text-base transform hover:scale-[1.02] active:scale-[0.98]"
                     >
-                        <Download className="w-5 h-5 mr-2" /> Baixar MP3
+                        <Download className="w-5 h-5 mr-2" /> Baixar WAV
                     </button>
                 </div>
                 
