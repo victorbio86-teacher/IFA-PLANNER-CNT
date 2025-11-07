@@ -1,0 +1,405 @@
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { BookOpen, Book, Users, Zap, Briefcase, ChevronDown, ChevronUp, PlayCircle, RotateCw, Mic, AlertTriangle, MessageSquare, ArrowLeft, Download } from 'lucide-react';
+import { GoogleGenAI, Modality } from '@google/genai'; // Importar GoogleGenAI e Modality
+
+// =========================================================================
+// Configuração da API TTS (Text-to-Speech)
+// =========================================================================
+
+// Chave da API (deve ser obtida do ambiente)
+const apiKey = process.env.API_KEY; 
+const TTS_MODEL = "gemini-2.5-flash-preview-tts";
+const TTS_VOICE = "Kore"; // Voz firme e neutra
+
+// =========================================================================
+// Dados dos Eixos Estruturantes (Textos Detalhados)
+// =========================================================================
+
+interface EixoContent {
+    name: string;
+    icon: React.ElementType;
+    fullDescription: string;
+    preRecordedAudioUrl?: string; // Nova propriedade para URL de áudio pré-gravado
+}
+
+const EIXOS_DATA: EixoContent[] = [
+    {
+        name: 'Método, Conhecimento e Ciência (Investigação Científica)',
+        icon: Book,
+        fullDescription: "O eixo **Investigação Científica** é a espinha dorsal de todo o trabalho em Ciências da Natureza. Seu objetivo fundamental é capacitar o estudante a ir além da memorização de fatos e dados, ensinando o rigoroso 'como' chegamos ao conhecimento científico validado. O foco principal é o **Letramento Científico** completo, que envolve a capacidade de ler, compreender e, crucialmente, participar do processo de investigação. Isso significa que o aluno deve dominar a arte de formular perguntas investigáveis, elaborar hipóteses testáveis e planejar experimentos controlados. Em Biologia, um excelente exemplo seria guiar a turma a formular e testar hipóteses sobre a variação da taxa de fotossíntese em diferentes condições de luz e cor. Em Física, o aluno pode ser desafiado a projetar um método para medir a aceleração da gravidade usando apenas materiais simples, registrando e analisando os dados com precisão. Este eixo exige o desenvolvimento de habilidades de argumentação baseada em evidências, a identificação de variáveis dependentes e independentes, e a compreensão crítica de vieses em estudos científicos, replicando o método que estrutura o próprio conhecimento da área.",
+        preRecordedAudioUrl: '/audio/metodo_conhecimento_ciencia.wav' // Exemplo de URL de áudio pré-gravado hospedado no próprio app (assumindo public/audio/)
+    },
+    {
+        name: 'Mediação e Intervenção Sociocultural',
+        icon: Users,
+        fullDescription: "O conhecimento em Ciências da Natureza não pode ser estéril; ele deve ser uma poderosa ferramenta de engajamento e transformação social. O eixo **Mediação e Intervenção Sociocultural** exige que o aluno faça a ponte essencial entre o rigor científico e as necessidades urgentes da comunidade. A Mediação é a habilidade de traduzir informações científicas complexas, como dados sobre poluição hídrica ou relatórios epidemiológicos, para uma linguagem clara e acessível a diversos públicos. Por exemplo, criar materiais informativos sobre a resistência bacteriana para apresentar em uma feira de saúde local. A Intervenção, por sua vez, é a ação ética e responsável: se a comunidade sofre com a falta de saneamento, os alunos podem aplicar conhecimentos de Química e Biologia para prototipar um sistema de filtragem de efluentes de baixo custo usando materiais reciclados. Este eixo promove o desenvolvimento da Bioética, o diálogo e a visão de que o cientista é um agente ativo. O estudante aprende a analisar problemas socioambientais locais (como o descarte inadequado de lixo ou a gestão de recursos hídricos) e a promover uma transformação social justa e sustentável através da ciência.",
+        preRecordedAudioUrl: 'https://drive.google.com/uc?export=download&id=1SObZdtQtPRNOTTL4U9sUjQL2ZNzEEdqc' // Substituído pelo link do Google Drive
+    },
+    {
+        name: 'Inovação e Intervenção Tecnológica',
+        icon: Zap,
+        fullDescription: "Este eixo estrutura o aprendizado para unir o conhecimento científico puro ao desenvolvimento prático de soluções e protótipos criativos, focando na geração de valor. **Inovação e Intervenção Tecnológica** significa ir além da compreensão da teoria para aplicá-la na criação de algo novo ou na melhoria de algo existente. A Inovação começa na ideação, como, por exemplo, o desenvolvimento de um novo tipo de embalagem biodegradável após estudar a polimerização (Química) ou a concepção de um sistema de energia eólica mais eficiente (Física). A Intervenção é a aplicação estratégica e técnica. Por exemplo, os alunos podem utilizar microcontroladores (como Arduinos), conhecimentos de Eletrônica e Meteorologia para criar um sensor automatizado que otimiza o uso sustentável da água na agricultura, acionando a irrigação apenas quando necessário. Este eixo estimula intensamente o desenvolvimento do pensamento computacional, a cultura *maker* e o *design thinking*. O objetivo é que o estudante prototipe, simule cenários e teste iterações, transformando a teoria científica em um produto ou processo de impacto positivo, preparando-o para o ecossistema de alta tecnologia e empreendedorismo.",
+        preRecordedAudioUrl: 'https://drive.google.com/uc?export=download&id=1zO13ei63FZJQT8CsHnVCdzVqn4IfMd1K' // Substituído pelo link do Google Drive (mesmo ID do primeiro eixo, conforme fornecido)
+    },
+    {
+        name: 'Mundo do Trabalho e Transformação Social',
+        icon: Briefcase,
+        fullDescription: "Este eixo crucial conecta o aprendizado de Ciências da Natureza diretamente ao Projeto de Vida do estudante e à sua atuação no mercado de trabalho e na sociedade. Ele garante que o conhecimento acadêmico gere valor profissional, ético e social. O foco aqui não é apenas na técnica, mas na análise estratégica. Por exemplo, ao estudar matrizes energéticas (Física e Química), o aluno deve analisar a viabilidade econômica, os riscos e o impacto ambiental da transição para fontes renováveis, simulando um estudo de caso de consultoria empresarial. O eixo exige o desenvolvimento de competências socioemocionais cruciais: gestão de projetos (do início ao fim), comunicação assertiva em equipe multidisciplinar, e, principalmente, responsabilidade ética e socioambiental nas decisões. O objetivo é preparar o estudante para entender e navegar pelas complexidades do mundo profissional, garantindo que ele não apenas possua o conhecimento científico, mas saiba usá-lo como um agente proativo, capaz de tomar decisões informadas que contribuam para a construção de uma sociedade mais sustentável e justa.",
+        preRecordedAudioUrl: 'https://drive.google.com/uc?export=download&id=14SBs2a-29zsxTYt5b_W--iVn_b9XplUo' // Substituído pelo link do Google Drive
+    },
+];
+
+// =========================================================================
+// Funções de Processamento de Áudio (PCM para WAV) - CONFORME DIRETRIZES
+// =========================================================================
+
+function decode(base64: string) {
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+}
+
+/** Ajuda a escrever strings em DataView para o cabeçalho WAV. */
+const writeString = (view: DataView, offset: number, string: string) => {
+    for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+    }
+};
+
+/**
+ * Converte dados PCM brutos (Uint8Array de bytes) em um Blob de arquivo WAV.
+ */
+const pcmToWav = (pcmDataBytes: Uint8Array, sampleRate: number): Blob => {
+    const numChannels = 1; 
+    const bytesPerSample = 2; // 16-bit PCM
+    const pcmData = new Int16Array(pcmDataBytes.buffer); // Converte o buffer de bytes para Int16Array
+
+    const buffer = new ArrayBuffer(44 + pcmData.length * bytesPerSample);
+    const view = new DataView(buffer);
+
+    let offset = 0;
+
+    /* RIFF identifier */
+    writeString(view, offset, 'RIFF'); offset += 4;
+    /* RIFF chunk length */
+    view.setUint32(offset, 36 + pcmData.length * bytesPerSample, true); offset += 4;
+    /* RIFF type */
+    writeString(view, offset, 'WAVE'); offset += 4;
+    /* format chunk identifier */
+    view.setUint32(offset, 16, true); offset += 4;
+    /* format chunk length */
+    view.setUint16(offset, 1, true); offset += 2;
+    /* sample format (1 for PCM) */
+    view.setUint16(offset, numChannels, true); offset += 2;
+    /* number of channels */
+    view.setUint32(offset, sampleRate, true); offset += 4;
+    /* sample rate */
+    view.setUint32(offset, sampleRate * numChannels * bytesPerSample, true); offset += 4;
+    /* byte rate (sample rate * block align) */
+    view.setUint16(offset, numChannels * bytesPerSample, true); offset += 2;
+    /* block align (num channels * bytes per sample) */
+    view.setUint16(offset, 16, true); offset += 2; // 16 bits
+    /* bits per sample */
+    writeString(view, offset, 'data'); offset += 4;
+    /* data chunk identifier */
+    view.setUint32(offset, pcmData.length * bytesPerSample, true); offset += 4;
+    /* data chunk length */
+
+    // Escreve os dados PCM
+    for (let i = 0; i < pcmData.length; i++, offset += 2) {
+        view.setInt16(offset, pcmData[i], true);
+    }
+
+    return new Blob([view], { type: 'audio/wav' });
+};
+
+
+// =========================================================================
+// Função de Chamada à API TTS com Backoff Exponencial
+// =========================================================================
+
+const fetchTTSAudio = async (text: string, maxRetries = 5): Promise<string> => {
+    if (!apiKey) {
+        throw new Error('API_KEY não está configurada. Por favor, selecione uma chave de API válida.');
+    }
+
+    const ai = new GoogleGenAI({ apiKey: apiKey });
+
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const response = await ai.models.generateContent({
+                model: TTS_MODEL,
+                contents: [{ parts: [{ text: text }] }],
+                config: {
+                    responseModalities: [Modality.AUDIO],
+                    speechConfig: {
+                        voiceConfig: { prebuiltVoiceConfig: { voiceName: TTS_VOICE } },
+                    },
+                },
+            });
+
+            const base64EncodedAudioString = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+            if (base64EncodedAudioString) {
+                const pcmBytes = decode(base64EncodedAudioString);
+                const wavBlob = pcmToWav(pcmBytes, 24000); // A API TTS retorna 24000 Hz
+                const audioUrl = URL.createObjectURL(wavBlob);
+                return audioUrl;
+            } else {
+                throw new Error("Resposta da API de áudio inválida ou incompleta.");
+            }
+
+        } catch (error) {
+            console.error(`Tentativa ${i + 1} falhou:`, error);
+            if (i === maxRetries - 1) {
+                throw error; 
+            }
+            const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+    throw new Error("Falha ao buscar áudio após várias tentativas.");
+};
+
+// =========================================================================
+// Função de Download de Áudio
+// =========================================================================
+const downloadAudio = (audioUrl: string, fileName: string) => {
+    const a = document.createElement('a');
+    a.href = audioUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
+
+
+// =========================================================================
+// Componente de Detalhe do Eixo (Exibe Texto Completo e Botão TTS)
+// =========================================================================
+
+interface EixoDetalheProps extends EixoContent {}
+
+const EixoDetalhe: React.FC<EixoDetalheProps> = ({ name, fullDescription, preRecordedAudioUrl }) => {
+    const [isLoading, setIsLoading] = useState(false);
+    const [audioUrl, setAudioUrl] = useState<string | null>(preRecordedAudioUrl || null); // Começa com o áudio pré-gravado, se existir
+    const [sourceIsPreRecorded, setSourceIsPreRecorded] = useState<boolean>(!!preRecordedAudioUrl); // Novo estado
+    const [error, setError] = useState<string | null>(null);
+    const audioRef = useRef<HTMLAudioElement>(null); // Ref para o elemento de áudio
+
+    // Efeito para tocar o áudio automaticamente quando a URL do áudio é definida
+    useEffect(() => {
+        if (audioUrl && audioRef.current) {
+            audioRef.current.src = audioUrl;
+            audioRef.current.load();
+            audioRef.current.play().catch(e => console.log("Erro ao tentar tocar automaticamente:", e));
+        }
+        // Limpar URL do objeto quando o componente for desmontado ou audioUrl for redefinido
+        return () => {
+            if (audioUrl && !sourceIsPreRecorded) { // Apenas revoga URLs de objeto geradas via TTS
+                URL.revokeObjectURL(audioUrl);
+            }
+        };
+    }, [audioUrl, sourceIsPreRecorded]); // Executa quando audioUrl ou sourceIsPreRecorded mudam
+
+    const handleGenerateAndPlay = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        
+        // Revoga a URL anterior se for uma URL de objeto (TTS)
+        if (audioUrl && !sourceIsPreRecorded) {
+            URL.revokeObjectURL(audioUrl);
+        }
+        setAudioUrl(null); // Limpa a URL anterior para que o useEffect possa ser acionado novamente
+        setSourceIsPreRecorded(false); // Assume que a nova fonte será TTS, a menos que seja um pré-gravado
+
+        try {
+            let newUrl: string;
+            if (preRecordedAudioUrl) {
+                newUrl = preRecordedAudioUrl;
+                setSourceIsPreRecorded(true);
+            } else {
+                newUrl = await fetchTTSAudio(fullDescription);
+                setSourceIsPreRecorded(false);
+            }
+            setAudioUrl(newUrl); // Atualiza o estado, o que vai acionar o useEffect para tocar o áudio
+
+        } catch (err) {
+            console.error("Erro na geração do áudio:", err);
+            setError(`Falha ao gerar o áudio. Tente novamente. (${err instanceof Error ? err.message : String(err)})`);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [fullDescription, audioUrl, preRecordedAudioUrl, sourceIsPreRecorded]);
+
+
+    return (
+        <div className="space-y-6">
+            
+            {/* Seção de Texto Original Completo (Fundo Índigo Suave) */}
+            <div className="p-5 bg-indigo-50 border-l-4 border-indigo-500 rounded-xl shadow-inner transition-all duration-300">
+                <h3 className="font-extrabold text-xl text-indigo-800 flex items-center mb-3 border-b pb-2 border-indigo-300">
+                    <MessageSquare className="w-5 h-5 mr-2 text-indigo-600" />
+                    Descrição Detalhada do Eixo
+                </h3>
+                <p className="text-gray-700 leading-relaxed text-justify">
+                    {fullDescription}
+                </p>
+            </div>
+
+            {/* Seção de Controles TTS (Fundo Esmeralda, Ação) */}
+            <div className="p-5 bg-emerald-50 border-l-4 border-emerald-500 rounded-xl shadow-md transition-all duration-300">
+                <h4 className="font-bold text-lg text-emerald-800 flex items-center mb-4">
+                    <Mic className="w-5 h-5 mr-2 text-emerald-600" /> Geração de Áudio {preRecordedAudioUrl ? '(Pré-gravado)' : 'TTS'}
+                </h4>
+                
+                <div className="flex justify-center mb-4">
+                    
+                    {/* Botão de Geração/Reprodução com Sombra e Efeito Hover */}
+                    <button
+                        onClick={handleGenerateAndPlay}
+                        disabled={isLoading}
+                        className="flex items-center justify-center w-full max-w-sm px-8 py-3 bg-emerald-600 text-white font-extrabold rounded-full hover:bg-emerald-700 transition duration-300 shadow-lg shadow-emerald-300/50 text-base disabled:bg-gray-400 disabled:shadow-none disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        {isLoading ? (
+                            <>
+                                <RotateCw className="w-5 h-5 mr-2 animate-spin" />
+                                Gerando Áudio (Aguarde)...
+                            </>
+                        ) : (
+                            <>
+                                <PlayCircle className="w-5 h-5 mr-2" /> 
+                                {preRecordedAudioUrl ? 'Ouvir Narração' : 'Gerar e Ouvir Narração'}
+                            </>
+                        )}
+                    </button>
+                </div>
+                
+                {/* Visualização de Áudio / Erro */}
+                {audioUrl && (
+                    <div className="mt-4 pt-4 border-t border-emerald-300">
+                        <h5 className="font-semibold text-emerald-700 mb-2 text-center text-sm">Controle de Reprodução:</h5>
+                        <audio ref={audioRef} controls className="w-full shadow-xl rounded-lg bg-white border border-emerald-300"></audio>
+                        
+                        <div className="mt-3 flex justify-center">
+                            <button
+                                onClick={() => downloadAudio(audioUrl, `${name}.wav`)}
+                                className="flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 transition duration-300 shadow-md text-sm"
+                            >
+                                <Download className="w-4 h-4 mr-2" /> Baixar Áudio
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="mt-4 flex items-center p-3 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-lg shadow-md">
+                        <AlertTriangle className="w-5 h-5 mr-2" />
+                        <span className="font-medium text-sm">Erro: {error}</span>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
+// =========================================================================
+// Componente Principal e Acordeão
+// =========================================================================
+
+interface AccordionItemProps {
+    title: string;
+    icon: React.ElementType;
+    children: React.ReactNode;
+}
+
+const AccordionItem: React.FC<AccordionItemProps> = ({ title, icon: Icon, children }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="border border-indigo-200 rounded-2xl shadow-xl bg-white overflow-hidden transition-all duration-300 hover:shadow-2xl">
+            <button
+                className={`flex justify-between items-center w-full p-6 text-left font-bold transition duration-300 ${isOpen ? 'bg-indigo-100/70 border-b border-indigo-300 text-indigo-800' : 'bg-white hover:bg-indigo-50 text-gray-800'}`}
+                onClick={() => setIsOpen(!isOpen)}
+                aria-expanded={isOpen}
+            >
+                <div className="flex items-center">
+                    <Icon className="w-7 h-7 mr-4 text-indigo-600" />
+                    <h2 className="text-xl sm:text-2xl">{title}</h2>
+                </div>
+                {isOpen ? <ChevronUp className="w-6 h-6 text-indigo-600" /> : <ChevronDown className="w-6 h-6 text-indigo-600" />}
+            </button>
+            
+            <div 
+                className={`transition-max-height ease-in-out duration-700 overflow-hidden`}
+                style={{ maxHeight: isOpen ? '9999px' : '0' }}
+            >
+                <div className="p-6">
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+interface EixosCurricularesProps {
+    onBackToMenu: () => void;
+}
+
+const EixosCurriculares: React.FC<EixosCurricularesProps> = ({ onBackToMenu }) => {
+    return (
+        <div className="min-h-screen bg-gray-100 p-4 sm:p-10 font-sans relative">
+            <button
+                onClick={onBackToMenu}
+                className="absolute top-4 left-4 p-2 rounded-full bg-slate-800 text-gray-100 hover:bg-slate-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-75"
+                aria-label="Voltar ao Menu Principal"
+            >
+                <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div className="max-w-5xl mx-auto">
+                
+                {/* Título e Subtítulo - Design Impactante */}
+                <header className="text-center mb-12 p-8 bg-white rounded-3xl shadow-2xl border-b-8 border-indigo-600 transform hover:scale-[1.01] transition-transform duration-300">
+                    <h1 className="text-4xl sm:text-5xl font-extrabold text-indigo-900 flex items-center justify-center leading-tight">
+                        <BookOpen className="w-10 h-10 mr-4 text-indigo-600" />
+                        Eixos Curriculares Estruturantes
+                    </h1>
+                    <p className="text-xl sm:text-2xl text-gray-700 mt-4 font-light italic">
+                        Entenda como o eixo curricular estruturante se conecta com a área de Ciências da Natureza.
+                    </p>
+                    <p className="text-md text-gray-500 mt-3">
+                        Visualize o conteúdo detalhado e ouça a narração com nossa funcionalidade de Texto-para-Voz (TTS) ou áudios pré-gravados.
+                    </p>
+                </header>
+
+                {/* Lista de Eixos */}
+                <div className="space-y-8">
+                    {EIXOS_DATA.map((eixo, index) => (
+                        <AccordionItem 
+                            key={index}
+                            title={eixo.name}
+                            icon={eixo.icon}
+                        >
+                            <EixoDetalhe {...eixo} />
+                        </AccordionItem>
+                    ))}
+                </div>
+            </div>
+            <div className="mt-8 text-center">
+                <button
+                    onClick={onBackToMenu}
+                    className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-full shadow-lg hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-500 focus:ring-opacity-75 transition-all duration-300"
+                >
+                    Voltar ao Menu Principal
+                </button>
+            </div>
+        </div>
+    );
+};
+
+export default EixosCurriculares;
